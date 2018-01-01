@@ -1,0 +1,42 @@
+{
+  "name": "wiki-builder",
+  "version": "0.1.0",
+  "description": "Build github wikis from markdown files",
+  "main": "build.js",
+  "scripts": {
+    "start": "node wikiBuild.js",
+    "build": "babel src.js --out-file build.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "bin": {
+    "wiki-builder": "wikiBuild.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/petekeller2/wiki-builder.git"
+  },
+  "author": "Peter Keller",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/petekeller2/wiki-builder/issues"
+  },
+  "homepage": "https://github.com/petekeller2/wiki-builder#readme",
+  "dependencies": {
+    "fs-extra": "^5.0.0",
+    "glob": "^7.1.2",
+    "shelljs": "^0.7.8"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-eslint": "^8.1.2",
+    "babel-preset-airbnb": "^2.4.0",
+    "eslint": "^4.14.0",
+    "eslint-config-airbnb": "^16.1.0",
+    "eslint-config-airbnb-base": "^12.1.0",
+    "eslint-plugin-babel": "^4.1.2",
+    "eslint-plugin-flowtype": "^2.40.1",
+    "eslint-plugin-import": "^2.8.0",
+    "eslint-plugin-jsx-a11y": "^6.0.3",
+    "eslint-plugin-react": "^7.5.1"
+  }
+}
