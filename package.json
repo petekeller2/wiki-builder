@@ -1,6 +1,6 @@
 {
   "name": "wiki-builder",
-  "version": "0.9.1",
+  "version": "0.9.2",
   "description": "Build github wikis from markdown files",
   "main": "build.js",
   "scripts": {

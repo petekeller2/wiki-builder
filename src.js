@@ -210,7 +210,7 @@ export default {
       const gitIgnoreArray = gitIgnoreFile.split('\n');
       gitIgnoreArray.forEach((line) => {
         const endOfPath = line.split('/').pop();
-        if (endOfPath.split('.').length === 1) {
+        if (line.slice(-1) === '/') {
           newWikiConfig.ignoreDirs.push(line);
         } else if (endOfPath.split('.').pop().toLowerCase() === 'md') {
           newWikiConfig.ignoreMdFiles.push(line);

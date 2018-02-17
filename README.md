@@ -3,6 +3,8 @@ files in your project.
 
 # Setup
 
+`npm install wiki-builder --save-dev`
+
 Create a file named wikiConfig.json
 
 ```
