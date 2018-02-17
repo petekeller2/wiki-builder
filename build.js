@@ -22,9 +22,6 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'd
 
 function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
 
-// TODO: readme say files to ignore specific files ./readme.md or all readme.md
-// TODO: say ./ is required for specific
-
 exports['default'] = {
   tempWikiDir: 'tempMdFiles',
   wikiConfigFileName: 'wikiConfig.json',
@@ -286,7 +283,7 @@ exports['default'] = {
         var gitIgnoreArray = gitIgnoreFile.split('\n');
         gitIgnoreArray.forEach(function (line) {
           var endOfPath = line.split('/').pop();
-          if (endOfPath.split('.').length === 1) {
+          if (line.slice(-1) === '/') {
             newWikiConfig.ignoreDirs.push(line);
           } else if (endOfPath.split('.').pop().toLowerCase() === 'md') {
             newWikiConfig.ignoreMdFiles.push(line);
