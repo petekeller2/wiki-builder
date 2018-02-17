@@ -27,7 +27,7 @@ To ignore files by file name, don't include the path (example: readme.md)
 
 **ignoreMdTitles:** Ignore by the first line of markdown files.
 
-**ignoreDir:s** List of directories to ignore. Includes node_modules.
+**ignoreDirs:** List of directories to ignore. Includes node_modules.
 
 **statsEnabled:** Creates a stats markdown file for the wiki. A stats markdown file can 
 only be created for git repos with commits. False by default.
