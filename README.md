@@ -31,10 +31,10 @@ To ignore files by file name, don't include the path (example: readme.md)
 
 **ignoreDirs:** List of directories to ignore. Includes node_modules.
 
-**statsEnabled:** Creates a stats markdown file for the wiki. A stats markdown file can 
-only be created for git repos with commits. False by default.
+**statsEnabled:** Creates a stats markdown file for the wiki. This file can 
+only be created for git repositories with commits. False by default.
 
-**useGitignore:** Ignore directories and files in 
+**useGitignore:** Ignore directories and markdown files in 
 .gitignore. True by default.
 
 # Usage
@@ -48,5 +48,5 @@ package.json example:
   }
 ```
 
-`wiki-builder` puts files the 'wikiDirPath'. If this 
+`wiki-builder` puts files into the 'wikiDirPath'. If this 
 directory is not a submodule, [you can make it one.](https://brendancleary.com/2013/03/08/including-a-github-wiki-in-a-repository-as-a-submodule/)
