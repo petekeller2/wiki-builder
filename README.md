@@ -39,7 +39,9 @@ only be created for git repos with commits. False by default.
 
 # Usage
 
-Run `wiki-builder`. Example usage package.json:
+Run `wiki-builder`. 
+
+package.json example:
 ```
 "scripts": {
     "wiki": "wiki-builder"
