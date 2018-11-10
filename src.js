@@ -27,7 +27,9 @@ export default {
   safetyCounterLimit: 100,
   async buildWiki() {
     const wikiConfig = await this.getWikiConfigData(await this.findWikiConfigPath());
-    const { wikiDirPath, ignoreMdTitles, statsEnabled } = wikiConfig;
+    const {
+      wikiDirPath, ignoreMdTitles, statsEnabled, plugins,
+    } = wikiConfig;
 
     await fs.ensureDir(wikiDirPath);
     await this.removeMdFilesInWikiDir(wikiDirPath);
@@ -35,13 +37,30 @@ export default {
     await this.copyFilesToTempDir(wikiConfig);
     await this.createStatsIfEnabled(statsEnabled, wikiDirPath);
 
-    const reduceActionSteps = new Map();
+    let reduceActionSteps = new Map();
     reduceActionSteps.set([this.configIgnoreByTitle, [ignoreMdTitles]], [this.removeFiles, []]);
+    reduceActionSteps = this.addPluginReduceActionSteps(reduceActionSteps, plugins);
     reduceActionSteps.set([this.wikiFileNameByTitle, []], [this.moveFilesToWiki, [this]]);
     await this.readReduceAction(reduceActionSteps, wikiDirPath);
 
     await this.removeTempDir(wikiDirPath);
   },
+
+  addPluginReduceActionSteps(reduceActionSteps: raSteps, plugins: any): raSteps {
+    if (!Array.isArray(plugins) || plugins.length <= 0) {
+      return reduceActionSteps;
+    }
+    plugins.forEach((plugin) => {
+      console.log(plugin); // debug
+      // eslint-disable-next-line
+      const tempPlugin = require(plugin);
+      // const raStep = tempPlugin();
+      // $FlowFixMe
+      // reduceActionSteps.set(raStep);
+    });
+    return reduceActionSteps;
+  },
+
   async findWikiConfigPath(): Promise<string> {
     if (await fs.pathExists(`./${this.wikiConfigFileName}`)) {
       return this.wikiConfigFileName;
