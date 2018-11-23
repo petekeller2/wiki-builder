@@ -1,28 +1,37 @@
+"use strict";
+
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+exports["default"] = void 0;
 
-var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
+var _fsExtra = _interopRequireDefault(require("fs-extra"));
 
-var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+var _glob = _interopRequireDefault(require("glob"));
 
-var _fsExtra = require('fs-extra');
+var _shelljs = _interopRequireDefault(require("shelljs"));
 
-var _fsExtra2 = _interopRequireDefault(_fsExtra);
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
 
-var _glob = require('glob');
+function _toConsumableArray(arr) { return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _nonIterableSpread(); }
 
-var _glob2 = _interopRequireDefault(_glob);
+function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance"); }
 
-var _shelljs = require('shelljs');
+function _iterableToArray(iter) { if (Symbol.iterator in Object(iter) || Object.prototype.toString.call(iter) === "[object Arguments]") return Array.from(iter); }
 
-var _shelljs2 = _interopRequireDefault(_shelljs);
+function _arrayWithoutHoles(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = new Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } }
 
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
+function _slicedToArray(arr, i) { return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _nonIterableRest(); }
 
-function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
+function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance"); }
 
-exports['default'] = {
+function _iterableToArrayLimit(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"] != null) _i["return"](); } finally { if (_d) throw _e; } } return _arr; }
+
+function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
+
+function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+
+var _default = {
   tempWikiDir: 'tempMdFiles',
   wikiConfigFileName: 'wikiConfig.json',
   safetyCounterLimit: 100,
@@ -31,32 +40,83 @@ exports['default'] = {
       var wikiConfig = await this.getWikiConfigData((await this.findWikiConfigPath()));
       var wikiDirPath = wikiConfig.wikiDirPath,
           ignoreMdTitles = wikiConfig.ignoreMdTitles,
-          statsEnabled = wikiConfig.statsEnabled;
-
-
-      await _fsExtra2['default'].ensureDir(wikiDirPath);
+          statsEnabled = wikiConfig.statsEnabled,
+          plugins = wikiConfig.plugins;
+      await _fsExtra["default"].ensureDir(wikiDirPath);
       await this.removeMdFilesInWikiDir(wikiDirPath);
       await this.emptyTempWikiDir(wikiDirPath);
       await this.copyFilesToTempDir(wikiConfig);
       await this.createStatsIfEnabled(statsEnabled, wikiDirPath);
-
+      var wikiBuilderModule = [this, 'wiki-builder'];
       var reduceActionSteps = new Map();
-      reduceActionSteps.set([this.configIgnoreByTitle, [ignoreMdTitles]], [this.removeFiles, []]);
-      reduceActionSteps.set([this.wikiFileNameByTitle, []], [this.moveFilesToWiki, [this]]);
+      reduceActionSteps.set([this.configIgnoreByTitle, [ignoreMdTitles]], [[this.removeFiles, []], wikiBuilderModule]);
+      reduceActionSteps = this.addPluginReduceActionSteps(reduceActionSteps, plugins);
+      reduceActionSteps.set([this.wikiFileNameByTitle, []], [[this.moveFilesToWiki, [this]], wikiBuilderModule]);
       await this.readReduceAction(reduceActionSteps, wikiDirPath);
-
       await this.removeTempDir(wikiDirPath);
     }
 
     return buildWiki;
   }(),
+  addPluginReduceActionSteps: function () {
+    function addPluginReduceActionSteps(reduceActionSteps, plugins) {
+      var _this = this;
+
+      plugins.forEach(function (plugin) {
+        var pluginPath = _this.getPluginPath(plugin); // eslint-disable-next-line
+
+
+        var pluginModule = require(pluginPath);
+
+        var raStepArray = pluginModule.getStep();
+        raStepArray[1].push([pluginModule, plugin]);
+        reduceActionSteps.set(raStepArray[0], raStepArray[1]);
+      });
+      return reduceActionSteps;
+    }
+
+    return addPluginReduceActionSteps;
+  }(),
+  cleanPlugins: function () {
+    function cleanPlugins(plugins) {
+      var _this2 = this;
+
+      if (!Array.isArray(plugins) || plugins.length <= 0) {
+        return [];
+      }
+
+      return plugins.map(function (plugin) {
+        return _this2.getPluginPath(plugin);
+      });
+    }
+
+    return cleanPlugins;
+  }(),
+  getPluginPath: function () {
+    function getPluginPath(pluginPath) {
+      if (pluginPath.includes('/') || pluginPath.includes('.js')) {
+        return pluginPath;
+      }
+
+      var returnPluginPath = "".concat(process.cwd(), "/node_modules/").concat(pluginPath);
+
+      if (pluginPath.endsWith('/')) {
+        return returnPluginPath;
+      }
+
+      return "".concat(returnPluginPath, "/");
+    }
+
+    return getPluginPath;
+  }(),
   findWikiConfigPath: function () {
     async function findWikiConfigPath() {
-      if (await _fsExtra2['default'].pathExists('./' + String(this.wikiConfigFileName))) {
+      if (await _fsExtra["default"].pathExists("./".concat(this.wikiConfigFileName))) {
         return this.wikiConfigFileName;
       }
-      var regex = new RegExp(String(this.wikiConfigFileName) + '$', 'g');
-      return _shelljs2['default'].find('.').filter(function (file) {
+
+      var regex = new RegExp("".concat(this.wikiConfigFileName, "$"), 'g');
+      return _shelljs["default"].find('.').filter(function (file) {
         return file.match(regex);
       }).pop();
     }
@@ -65,11 +125,11 @@ exports['default'] = {
   }(),
   getWikiConfigData: function () {
     function getWikiConfigData(wikiStringPath) {
-      var _this = this;
+      var _this3 = this;
 
-      return _fsExtra2['default'].readJson(wikiStringPath).then(function (wikiConfig) {
-        return _this.useGitignoredIfEnabled(_this.cleanWikiConfigData(wikiConfig));
-      })['catch'](function (err) {
+      return _fsExtra["default"].readJson(wikiStringPath).then(function (wikiConfig) {
+        return _this3.useGitignoredIfEnabled(_this3.cleanWikiConfigData(wikiConfig));
+      })["catch"](function (err) {
         console.error(err);
         return {};
       });
@@ -79,8 +139,7 @@ exports['default'] = {
   }(),
   cleanWikiConfigData: function () {
     function cleanWikiConfigData(wikiConfig) {
-      var cleanedWikiConfig = {};
-
+      var cleanedWikiConfig = wikiConfig;
       cleanedWikiConfig.wikiDirPath = this.cleanWikiConfigPath(wikiConfig.wikiDirPath, './wiki/');
       cleanedWikiConfig.projectDirPath = this.cleanWikiConfigPath(wikiConfig.projectDirPath, './');
       cleanedWikiConfig.ignoreMdFiles = this.cleanWikiConfigArray(wikiConfig.ignoreMdFiles, 'lower');
@@ -89,7 +148,7 @@ exports['default'] = {
       cleanedWikiConfig.ignoreMdTitles = this.cleanWikiConfigArray(wikiConfig.ignoreMdTitles, 'lower');
       cleanedWikiConfig.statsEnabled = this.cleanWikiConfigBool(wikiConfig.statsEnabled);
       cleanedWikiConfig.useGitignore = this.cleanWikiConfigBool(wikiConfig.useGitignore, true);
-
+      cleanedWikiConfig.plugins = this.cleanPlugins(wikiConfig.plugins);
       return cleanedWikiConfig;
     }
 
@@ -98,11 +157,13 @@ exports['default'] = {
   cleanWikiConfigPath: function () {
     function cleanWikiConfigPath(configPath, defaultPath) {
       var configPathReturn = configPath.trim();
+
       if (configPathReturn.length === 0) {
         configPathReturn = defaultPath;
       } else if (configPathReturn.slice(-1) !== '/') {
         configPathReturn += '/';
       }
+
       return configPathReturn;
     }
 
@@ -111,19 +172,23 @@ exports['default'] = {
   cleanWikiConfigArray: function () {
     function cleanWikiConfigArray(configArray, caseFunc) {
       var configArrayReturn = configArray;
+
       if (!Array.isArray(configArray) && configArray) {
-        if ((typeof configArray === 'undefined' ? 'undefined' : _typeof(configArray)) !== _typeof(true)) {
+        if (_typeof(configArray) !== _typeof(true)) {
           configArrayReturn = [];
           configArrayReturn.push(String(configArray));
         }
       }
+
       return configArrayReturn.map(function (file) {
         var fileReturn = String(file).trim();
+
         if (caseFunc.toLowerCase() === 'lower') {
           fileReturn = fileReturn.toLowerCase();
         } else if (caseFunc.toLowerCase() === 'upper') {
           fileReturn = fileReturn.toUpperCase();
         }
+
         return fileReturn;
       }).filter(function (file) {
         return file.length > 0;
@@ -138,9 +203,11 @@ exports['default'] = {
         var firstChar = configBool.toLowerCase().trim().charAt(0);
         return Boolean(firstChar === 't' || firstChar === 'y');
       }
+
       if (defaultValue && configBool === undefined) {
         return defaultValue;
       }
+
       return Boolean(configBool);
     }
 
@@ -148,12 +215,14 @@ exports['default'] = {
   }(),
   emptyTempWikiDir: function () {
     async function emptyTempWikiDir(wikiDirPath) {
-      var wikiTempDir = '' + String(wikiDirPath) + String(this.tempWikiDir);
-      var pathExists = await _fsExtra2['default'].pathExists(wikiTempDir);
+      var wikiTempDir = "".concat(wikiDirPath).concat(this.tempWikiDir);
+      var pathExists = await _fsExtra["default"].pathExists(wikiTempDir);
+
       if (pathExists) {
-        return _fsExtra2['default'].emptyDir(wikiTempDir);
+        return _fsExtra["default"].emptyDir(wikiTempDir);
       }
-      return _fsExtra2['default'].ensureDir(wikiTempDir);
+
+      return _fsExtra["default"].ensureDir(wikiTempDir);
     }
 
     return emptyTempWikiDir;
@@ -161,7 +230,7 @@ exports['default'] = {
   getMdFilesInDir: function () {
     function getMdFilesInDir(dirPath, dirType) {
       return new Promise(function (resolve, reject) {
-        (0, _glob2['default'])('' + String(dirPath) + (dirType.toLowerCase() === 'project' ? '{/**/,/}' : '/') + '*.md', function (er, files) {
+        (0, _glob["default"])("".concat(dirPath).concat(dirType.toLowerCase() === 'project' ? '{/**/,/}' : '/', "*.md"), function (er, files) {
           if (er) {
             reject(er);
           } else {
@@ -177,7 +246,7 @@ exports['default'] = {
     async function removeMdFilesInWikiDir(wikiDirPath) {
       var mdFiles = await this.getMdFilesInDir(wikiDirPath, 'wiki');
       var removeMdFilePromises = mdFiles.map(function (file) {
-        return _fsExtra2['default'].remove(file);
+        return _fsExtra["default"].remove(file);
       });
       return Promise.all(removeMdFilePromises);
     }
@@ -186,12 +255,11 @@ exports['default'] = {
   }(),
   copyFilesToTempDir: function () {
     async function copyFilesToTempDir(wikiConfig) {
-      var _this2 = this;
+      var _this4 = this;
 
       var wikiDirPath = wikiConfig.wikiDirPath,
           projectDirPath = wikiConfig.projectDirPath,
           ignoreMdFiles = wikiConfig.ignoreMdFiles;
-
       var mdFiles = await this.getMdFilesInDir(projectDirPath, 'project');
       mdFiles = mdFiles.filter(this.ignoreDirsFilterCallback(wikiConfig.ignoreDirs));
       var i = 0;
@@ -207,13 +275,15 @@ exports['default'] = {
         var ignoreMdFileNames = ignoreMdFiles.filter(function (f) {
           return !f.includes('/');
         });
+
         if (!ignoreMdSpecificFiles.some(function (ignore) {
           return file === ignore;
         }) && !ignoreMdFileNames.some(function (ignore) {
           return fileNamesToIgnore.includes(ignore);
         })) {
-          return _fsExtra2['default'].copy(file, '' + String(wikiDirPath) + String(_this2.tempWikiDir) + '/' + i + '.md');
+          return _fsExtra["default"].copy(file, "".concat(wikiDirPath).concat(_this4.tempWikiDir, "/").concat(i, ".md"));
         }
+
         return '';
       });
       return Promise.all(copyMdFilePromises);
@@ -221,68 +291,77 @@ exports['default'] = {
 
     return copyFilesToTempDir;
   }(),
-
   // A stats file will only be created for git repos with commits. Disabled by default
   createStatsIfEnabled: function () {
     async function createStatsIfEnabled(statsEnabled, wikiDirPath) {
       if (!statsEnabled) {
         return 'Stats not enabled';
       }
-      var statsFile = String(wikiDirPath) + '/' + String(this.tempWikiDir) + '/Stats.md';
+
+      var statsFile = "".concat(wikiDirPath, "/").concat(this.tempWikiDir, "/Stats.md");
       var command = 'git diff --stat `git hash-object -t tree /dev/null`';
-      command = command + ' > ' + statsFile;
+      command = "".concat(command, " > ").concat(statsFile);
       await new Promise(function (resolve, reject) {
-        _shelljs2['default'].exec(command, function (code, stdout, stderr) {
+        _shelljs["default"].exec(command, function (code, stdout, stderr) {
           if (stderr) {
             reject(stderr);
           }
+
           resolve(stdout);
         });
       });
       var writeFileData = await new Promise(function (resolve, reject) {
-        _fsExtra2['default'].readFile(statsFile, 'utf8', function (err, data) {
+        _fsExtra["default"].readFile(statsFile, 'utf8', function (err, data) {
           if (err) reject(err);
           var newFileData = data.toString().split('\n');
+
           if (data.toString().length > 0) {
             newFileData.pop();
             var fileCountLineCount = newFileData.pop();
             var numberMatches = fileCountLineCount.match(/\d+/g);
+
             if (numberMatches[1].length > 0) {
-              newFileData.push('### Total Lines of Code: ' + String(numberMatches[1]));
+              newFileData.push("### Total Lines of Code: ".concat(numberMatches[1]));
             }
+
             if (numberMatches[0].length > 0) {
-              newFileData.splice(0, 0, '### Number of Files: ' + String(numberMatches[0]));
+              newFileData.splice(0, 0, "### Number of Files: ".concat(numberMatches[0]));
             }
+
             newFileData.splice(0, 0, '# Stats');
           }
+
           resolve(newFileData.join('\n\n'));
         });
       });
+
       if (writeFileData.length > 0) {
         return new Promise(function (resolve, reject) {
-          _fsExtra2['default'].writeFile(statsFile, writeFileData, 'utf8', function (err) {
+          _fsExtra["default"].writeFile(statsFile, writeFileData, 'utf8', function (err) {
             if (err) reject(err);
             resolve('Stats file cleaned');
           });
         });
       }
-      await _fsExtra2['default'].remove(statsFile);
+
+      await _fsExtra["default"].remove(statsFile);
       return 'Stats file removed because it was empty';
     }
 
     return createStatsIfEnabled;
   }(),
-
   // Updates the wikiConfig object. Enabled by default
   useGitignoredIfEnabled: function () {
     async function useGitignoredIfEnabled(wikiConfig) {
-      var gitIgnoreFound = await _fsExtra2['default'].pathExists(String(wikiConfig.projectDirPath) + '.gitignore');
+      var gitIgnoreFound = await _fsExtra["default"].pathExists("".concat(wikiConfig.projectDirPath, ".gitignore"));
+
       if (wikiConfig.useGitignore && gitIgnoreFound) {
         var newWikiConfig = wikiConfig;
-        var gitIgnoreFile = await _fsExtra2['default'].readFile(String(wikiConfig.projectDirPath) + '.gitignore', 'utf8');
+        var gitIgnoreFile = await _fsExtra["default"].readFile("".concat(wikiConfig.projectDirPath, ".gitignore"), 'utf8');
         var gitIgnoreArray = gitIgnoreFile.split('\n');
         gitIgnoreArray.forEach(function (line) {
           var endOfPath = line.split('/').pop();
+
           if (line.slice(-1) === '/') {
             newWikiConfig.ignoreDirs.push(line);
           } else if (endOfPath.split('.').pop().toLowerCase() === 'md') {
@@ -291,6 +370,7 @@ exports['default'] = {
         });
         return newWikiConfig;
       }
+
       return wikiConfig;
     }
 
@@ -307,7 +387,6 @@ exports['default'] = {
 
     return ignoreDirsFilterCallback;
   }(),
-
   //   Read: Reads md files in the temporary wiki directory.
   // Reduce: Passes read results, specific function and its extra arguments to a reduce function.
   // Action: Passes reduced results and extra action function arguments to an action function.
@@ -316,14 +395,17 @@ exports['default'] = {
     async function readReduceAction(reduceActionSteps, wikiDirPath, safety) {
       // ------------------------------- Safety Counter -------------------------------
       var safetyCounter = safety;
+
       if (!safetyCounter) {
         safetyCounter = 1;
       } else if (safetyCounter > this.safetyCounterLimit) {
         return new Error('readReduceAction went over safety counter');
       }
-      safetyCounter += 1;
-      // ------------- Get Functions and Extra Arguments for Next Section -------------
+
+      safetyCounter += 1; // ------------- Get Functions and Extra Arguments for Next Section -------------
+
       var mapKeyValue = reduceActionSteps.entries().next().value;
+
       if (!mapKeyValue) {
         return new Error('No reduceActionSteps');
       }
@@ -337,43 +419,54 @@ exports['default'] = {
           extraSpecificArgs = _mapKey[1];
 
       var _mapValue = _slicedToArray(mapValue, 2),
-          actionOnReducedFunc = _mapValue[0],
-          extraActionArgs = _mapValue[1];
+          actionArray = _mapValue[0],
+          moduleArray = _mapValue[1];
 
-      var reduceFuncName = this.findReduceFuncName(specificFunc);
+      var _actionArray = _slicedToArray(actionArray, 2),
+          actionOnReducedFunc = _actionArray[0],
+          extraActionArgs = _actionArray[1];
+
+      var _moduleArray = _slicedToArray(moduleArray, 2),
+          module = _moduleArray[0],
+          moduleName = _moduleArray[1];
+
+      var reduceFuncName = this.findReduceFuncName(specificFunc, module);
+
       if (!reduceFuncName) {
-        return new Error('Reduce function for ' + String(specificFunc.name) + ' not found \n      (The pattern is ...By{x} for the specific function and ...By{x}Reduce for the reduce function).');
-      }
-      // ----------------------------- Read Reduce Action -----------------------------
+        console.log("A reduce function for ".concat(specificFunc.name, " was not found in ").concat(moduleName, ".\n") + '(The pattern is ...By{x} for the specific function and ...By{x}Reduce for the reduce function. ' + "In this case, x = '".concat(specificFunc.name.split('By').pop(), "'.)"));
+        process.exit(1);
+      } // ----------------------------- Read Reduce Action -----------------------------
+
+
       var filesInTempDir = await this.readFilesInTempDir(wikiDirPath);
-      var reduced = await this[reduceFuncName](filesInTempDir, extraSpecificArgs, specificFunc);
-      await actionOnReducedFunc.apply(undefined, [reduced].concat(_toConsumableArray(extraActionArgs)));
-      // ------------------ Recursive Function Call or Termination --------------------
+      var reduced = await module[reduceFuncName](filesInTempDir, extraSpecificArgs, specificFunc);
+      await actionOnReducedFunc.apply(void 0, [reduced].concat(_toConsumableArray(extraActionArgs))); // ------------------ Recursive Function Call or Termination --------------------
+
       if (reduceActionSteps.size !== 1) {
-        reduceActionSteps['delete'](mapKey);
+        reduceActionSteps["delete"](mapKey);
         return this.readReduceAction(reduceActionSteps, wikiDirPath, safetyCounter);
       }
+
       return undefined;
     }
 
     return readReduceAction;
   }(),
-
-  // Reduce Function (for readReduceAction)
   findReduceFuncName: function () {
-    function findReduceFuncName(specificFunc) {
-      var _this3 = this;
-
+    function findReduceFuncName(specificFunc, module) {
       var matchResults = specificFunc.name.match(/By(.*)/);
+
       if (matchResults) {
-        var reduceNameSearch = 'By' + String(matchResults[1]);
-        return Object.keys(this).find(function (prop) {
-          if (prop && typeof _this3[prop] === 'function' && _this3[prop].name) {
-            return _this3[prop].name.endsWith(reduceNameSearch + 'Reduce');
+        var reduceNameSearch = "By".concat(matchResults[1]);
+        return Object.keys(module).find(function (prop) {
+          if (prop && typeof module[prop] === 'function' && module[prop].name) {
+            return module[prop].name.endsWith("".concat(reduceNameSearch, "Reduce"));
           }
+
           return false;
         });
       }
+
       return undefined;
     }
 
@@ -381,23 +474,23 @@ exports['default'] = {
   }(),
   getFilesInTempDir: function () {
     function getFilesInTempDir(wikiDirPath) {
-      return _fsExtra2['default'].readdir('' + String(wikiDirPath) + String(this.tempWikiDir));
+      return _fsExtra["default"].readdir("".concat(wikiDirPath).concat(this.tempWikiDir));
     }
 
     return getFilesInTempDir;
   }(),
   readFilesInTempDir: function () {
     async function readFilesInTempDir(wikiDirPath) {
-      var _this4 = this;
+      var _this5 = this;
 
       var filesInTempDir = await this.getFilesInTempDir(wikiDirPath);
       var filePaths = filesInTempDir.map(function (file) {
-        return '' + String(wikiDirPath) + String(_this4.tempWikiDir) + '/' + String(file);
+        return "".concat(wikiDirPath).concat(_this5.tempWikiDir, "/").concat(file);
       });
       var fileAndBuffer = filePaths.map(function (file) {
         return {
           filePath: file,
-          buffer: _fsExtra2['default'].readFile(file)
+          buffer: _fsExtra["default"].readFile(file)
         };
       });
       return Promise.all(fileAndBuffer);
@@ -405,6 +498,7 @@ exports['default'] = {
 
     return readFilesInTempDir;
   }(),
+  // Reduce Function (for readReduceAction)
   filesByTitleReduce: function () {
     function filesByTitleReduce(filesInTempDir, extraArgs, specificFunc) {
       return filesInTempDir.reduce(async function (accumulator, fileObj) {
@@ -416,29 +510,30 @@ exports['default'] = {
         }).filter(function (line) {
           return line.length > 0;
         });
-        var file = specificFunc.apply(undefined, [lines, fileObj].concat(_toConsumableArray(extraArgs)));
+        var file = specificFunc.apply(void 0, [lines, fileObj].concat(_toConsumableArray(extraArgs)));
+
         if (file !== false) {
           awaitedAccumulator.push(file);
         }
+
         return awaitedAccumulator;
       }, Promise.resolve([]));
     }
 
     return filesByTitleReduce;
   }(),
-
   // Specific Function (for readReduceAction)
   configIgnoreByTitle: function () {
     function configIgnoreByTitle(lines, fileObj, ignoreTitles) {
       if (ignoreTitles.includes(lines.shift())) {
         return fileObj.filePath;
       }
+
       return false;
     }
 
     return configIgnoreByTitle;
   }(),
-
   // Specific Function (for readReduceAction)
   // returns { file path: wiki file name }
   wikiFileNameByTitle: function () {
@@ -449,9 +544,11 @@ exports['default'] = {
         return word.toUpperCase();
       });
       wikiFileName = wikiFileName.replace(/\s+/g, '-');
+
       if (fileObj.filePath) {
-        returnObj[fileObj.filePath] = String(wikiFileName) + '.md';
+        returnObj[fileObj.filePath] = "".concat(wikiFileName, ".md");
       }
+
       return returnObj;
     }
 
@@ -463,7 +560,7 @@ exports['default'] = {
         return file.length > 0;
       });
       var removeMdFilePromises = cleanedFilesToRemove.map(function (file) {
-        return _fsExtra2['default'].remove(file);
+        return _fsExtra["default"].remove(file);
       });
       return Promise.all(removeMdFilePromises);
     }
@@ -479,8 +576,8 @@ exports['default'] = {
         var destinationPath = filePath.split('/');
         destinationPath.pop();
         destinationPath.pop();
-        destinationPath = String(destinationPath.join('/')) + '/' + String(wikiName);
-        return _fsExtra2['default'].move(filePath, destinationPath);
+        destinationPath = "".concat(destinationPath.join('/'), "/").concat(wikiName);
+        return _fsExtra["default"].move(filePath, destinationPath);
       });
       return Promise.all(movedFiles);
     }
@@ -489,7 +586,7 @@ exports['default'] = {
   }(),
   cleanFilesToMove: function () {
     function cleanFilesToMove(filesToMove) {
-      var _this5 = this;
+      var _this6 = this;
 
       var cleanedFilesToMove = filesToMove.filter(function (fileObj) {
         return Object.keys(fileObj).length > 0;
@@ -504,13 +601,12 @@ exports['default'] = {
         var filePath = Object.keys(fileObj)[0];
         var wikiFileName = fileObj[Object.keys(fileObj)[0]];
 
-        var _getUniqueFileName = _this5.getUniqueFileName(wikiFileName, existingFileNames);
+        var _this6$getUniqueFileN = _this6.getUniqueFileName(wikiFileName, existingFileNames);
 
-        var _getUniqueFileName2 = _slicedToArray(_getUniqueFileName, 2);
+        var _this6$getUniqueFileN2 = _slicedToArray(_this6$getUniqueFileN, 2);
 
-        wikiFileName = _getUniqueFileName2[0];
-        existingFileNames = _getUniqueFileName2[1];
-
+        wikiFileName = _this6$getUniqueFileN2[0];
+        existingFileNames = _this6$getUniqueFileN2[1];
         existingFileNames.push(wikiFileName);
         returnFileObj[filePath] = wikiFileName;
         return returnFileObj;
@@ -526,29 +622,34 @@ exports['default'] = {
       }
 
       var safetyCounter = safety;
+
       if (!safetyCounter) {
         safetyCounter = 1;
       } else if (safetyCounter > this.safetyCounterLimit) {
         return ['safetyCounterExceeded.md', existingNames];
       }
-      safetyCounter += 1;
 
+      safetyCounter += 1;
       var fileNameArray = fileName.split('.');
       fileNameArray.pop();
       var fileNameNoExtension = fileNameArray.join('.');
       var newDupCount = dupCount;
+
       if (!newDupCount) {
         newDupCount = 1;
       } else {
         newDupCount += 1;
       }
-      var lastDupCount = '-(' + (newDupCount - 1) + ')';
+
+      var lastDupCount = "-(".concat(newDupCount - 1, ")");
       var fileNameNoExtensionArray = fileNameNoExtension.split(lastDupCount);
+
       if (fileNameNoExtensionArray.length > 1) {
         fileNameNoExtensionArray.pop();
       }
+
       fileNameNoExtension = fileNameNoExtensionArray.join(lastDupCount);
-      var newFileName = String(fileNameNoExtension) + '-(' + String(newDupCount) + ').md';
+      var newFileName = "".concat(fileNameNoExtension, "-(").concat(newDupCount, ").md");
       return this.getUniqueFileName(newFileName, existingNames, newDupCount, safetyCounter);
     }
 
@@ -556,9 +657,10 @@ exports['default'] = {
   }(),
   removeTempDir: function () {
     function removeTempDir(wikiDirPath) {
-      return _fsExtra2['default'].remove('' + String(wikiDirPath) + String(this.tempWikiDir));
+      return _fsExtra["default"].remove("".concat(wikiDirPath).concat(this.tempWikiDir));
     }
 
     return removeTempDir;
   }()
 };
+exports["default"] = _default;

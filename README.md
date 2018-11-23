@@ -15,7 +15,8 @@ Create a file named wikiConfig.json
   "ignoreMdTitles": [],
   "ignoreDirs": [],
   "statsEnabled": false,
-  "useGitignore": true
+  "useGitignore": true,
+  "plugins": []
 }
 ```
 
@@ -37,6 +38,11 @@ only be created for git repositories with commits. False by default.
 **useGitignore:** Ignore directories and markdown files in 
 .gitignore. True by default.
 
+**plugins:** Add plugins here. These plugins should have 
+ corresponding local node modules. If the node_modules directory is not 
+in the same directory as the project's root, give the module 
+(plugin) path instead of it's name. Example Usage: ["plugin-one", "plugin-two"].
+
 # Usage
 
 Run `wiki-builder`. 
@@ -48,5 +54,5 @@ package.json example:
   }
 ```
 
-`wiki-builder` puts files into the 'wikiDirPath'. If this 
-directory is not a submodule, [you can make it one.](https://brendancleary.com/2013/03/08/including-a-github-wiki-in-a-repository-as-a-submodule/)
+`wiki-builder` puts files into the 'wikiDirPath'. If you do 
+not have a github wiki git submodule, [you can make one.](https://brendancleary.com/2013/03/08/including-a-github-wiki-in-a-repository-as-a-submodule/)

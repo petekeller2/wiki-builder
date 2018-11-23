@@ -11,6 +11,7 @@ type wikiConfigType = {
   ignoreDirs: string[],
   statsEnabled: any,
   useGitignore: any,
+  plugins: string[],
 };
 type bufferAndPath = {
   buffer: Promise<Buffer>,
@@ -27,7 +28,9 @@ export default {
   safetyCounterLimit: 100,
   async buildWiki() {
     const wikiConfig = await this.getWikiConfigData(await this.findWikiConfigPath());
-    const { wikiDirPath, ignoreMdTitles, statsEnabled } = wikiConfig;
+    const {
+      wikiDirPath, ignoreMdTitles, statsEnabled, plugins,
+    } = wikiConfig;
 
     await fs.ensureDir(wikiDirPath);
     await this.removeMdFilesInWikiDir(wikiDirPath);
@@ -35,12 +38,47 @@ export default {
     await this.copyFilesToTempDir(wikiConfig);
     await this.createStatsIfEnabled(statsEnabled, wikiDirPath);
 
-    const reduceActionSteps = new Map();
-    reduceActionSteps.set([this.configIgnoreByTitle, [ignoreMdTitles]], [this.removeFiles, []]);
-    reduceActionSteps.set([this.wikiFileNameByTitle, []], [this.moveFilesToWiki, [this]]);
+    const wikiBuilderModule = [this, 'wiki-builder'];
+    let reduceActionSteps = new Map();
+    reduceActionSteps.set(
+      [this.configIgnoreByTitle, [ignoreMdTitles]],
+      [[this.removeFiles, []], wikiBuilderModule],
+    );
+    reduceActionSteps = this.addPluginReduceActionSteps(reduceActionSteps, plugins);
+    reduceActionSteps.set(
+      [this.wikiFileNameByTitle, []],
+      [[this.moveFilesToWiki, [this]], wikiBuilderModule],
+    );
     await this.readReduceAction(reduceActionSteps, wikiDirPath);
 
     await this.removeTempDir(wikiDirPath);
+  },
+  addPluginReduceActionSteps(reduceActionSteps: raSteps, plugins: string[]): raSteps {
+    plugins.forEach((plugin) => {
+      const pluginPath = this.getPluginPath(plugin);
+      // eslint-disable-next-line
+      const pluginModule = require(pluginPath);
+      const raStepArray = pluginModule.getStep();
+      raStepArray[1].push([pluginModule, plugin]);
+      reduceActionSteps.set(raStepArray[0], raStepArray[1]);
+    });
+    return reduceActionSteps;
+  },
+  cleanPlugins(plugins: string[]) {
+    if (!Array.isArray(plugins) || plugins.length <= 0) {
+      return [];
+    }
+    return plugins.map(plugin => this.getPluginPath(plugin));
+  },
+  getPluginPath(pluginPath: string): string {
+    if (pluginPath.includes('/') || pluginPath.includes('.js')) {
+      return pluginPath;
+    }
+    const returnPluginPath = `${process.cwd()}/node_modules/${pluginPath}`;
+    if (pluginPath.endsWith('/')) {
+      return returnPluginPath;
+    }
+    return `${returnPluginPath}/`;
   },
   async findWikiConfigPath(): Promise<string> {
     if (await fs.pathExists(`./${this.wikiConfigFileName}`)) {
@@ -58,7 +96,7 @@ export default {
       });
   },
   cleanWikiConfigData(wikiConfig: wikiConfigType): wikiConfigType {
-    const cleanedWikiConfig = {};
+    const cleanedWikiConfig = wikiConfig;
 
     cleanedWikiConfig.wikiDirPath = this.cleanWikiConfigPath(wikiConfig.wikiDirPath, './wiki/');
     cleanedWikiConfig.projectDirPath = this.cleanWikiConfigPath(wikiConfig.projectDirPath, './');
@@ -68,6 +106,7 @@ export default {
     cleanedWikiConfig.ignoreMdTitles = this.cleanWikiConfigArray(wikiConfig.ignoreMdTitles, 'lower');
     cleanedWikiConfig.statsEnabled = this.cleanWikiConfigBool(wikiConfig.statsEnabled);
     cleanedWikiConfig.useGitignore = this.cleanWikiConfigBool(wikiConfig.useGitignore, true);
+    cleanedWikiConfig.plugins = this.cleanPlugins(wikiConfig.plugins);
 
     return cleanedWikiConfig;
   },
@@ -244,15 +283,19 @@ export default {
     }
     const [mapKey, mapValue] = mapKeyValue;
     const [specificFunc, extraSpecificArgs] = mapKey;
-    const [actionOnReducedFunc, extraActionArgs] = mapValue;
-    const reduceFuncName = this.findReduceFuncName(specificFunc);
+    const [actionArray, moduleArray] = mapValue;
+    const [actionOnReducedFunc, extraActionArgs] = actionArray;
+    const [module, moduleName] = moduleArray;
+    const reduceFuncName = this.findReduceFuncName(specificFunc, module);
     if (!reduceFuncName) {
-      return new Error(`Reduce function for ${specificFunc.name} not found 
-      (The pattern is ...By{x} for the specific function and ...By{x}Reduce for the reduce function).`);
+      console.log(`A reduce function for ${specificFunc.name} was not found in ${moduleName}.\n`
+      + '(The pattern is ...By{x} for the specific function and ...By{x}Reduce for the reduce function. '
+      + `In this case, x = '${specificFunc.name.split('By').pop()}'.)`);
+      process.exit(1);
     }
     // ----------------------------- Read Reduce Action -----------------------------
     const filesInTempDir = await this.readFilesInTempDir(wikiDirPath);
-    const reduced = await this[reduceFuncName](filesInTempDir, extraSpecificArgs, specificFunc);
+    const reduced = await module[reduceFuncName](filesInTempDir, extraSpecificArgs, specificFunc);
     await actionOnReducedFunc(reduced, ...extraActionArgs);
     // ------------------ Recursive Function Call or Termination --------------------
     if (reduceActionSteps.size !== 1) {
@@ -261,14 +304,13 @@ export default {
     }
     return undefined;
   },
-  // Reduce Function (for readReduceAction)
-  findReduceFuncName(specificFunc: () => any): string | void {
+  findReduceFuncName(specificFunc: () => any, module: {}): string | void {
     const matchResults = specificFunc.name.match(/By(.*)/);
     if (matchResults) {
       const reduceNameSearch = `By${matchResults[1]}`;
-      return Object.keys(this).find((prop) => {
-        if (prop && (typeof this[prop] === 'function') && this[prop].name) {
-          return this[prop].name.endsWith(`${reduceNameSearch}Reduce`);
+      return Object.keys(module).find((prop) => {
+        if (prop && (typeof module[prop] === 'function') && module[prop].name) {
+          return module[prop].name.endsWith(`${reduceNameSearch}Reduce`);
         }
         return false;
       });
@@ -287,6 +329,7 @@ export default {
     }));
     return Promise.all(fileAndBuffer);
   },
+  // Reduce Function (for readReduceAction)
   filesByTitleReduce(filesInTempDir: Object[], extraArgs: any[], specificFunc: (
     lines: string[], fileObj: bufferAndPath, any[]) =>
     any): Promise<any[]> {
