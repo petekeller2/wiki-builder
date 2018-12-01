@@ -1,6 +1,6 @@
 {
   "name": "wiki-builder",
-  "version": "0.9.5",
+  "version": "0.9.6",
   "description": "Build github wikis from markdown files",
   "main": "build.js",
   "scripts": {
@@ -24,7 +24,8 @@
   "dependencies": {
     "fs-extra": "^7.0.1",
     "glob": "^7.1.3",
-    "shelljs": "^0.8.3"
+    "shelljs": "^0.8.3",
+    "tracer": "^0.9.6"
   },
   "devDependencies": {
     "@babel/cli": "^7.0.0",

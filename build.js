@@ -11,6 +11,8 @@ var _glob = _interopRequireDefault(require("glob"));
 
 var _shelljs = _interopRequireDefault(require("shelljs"));
 
+var _tracer = _interopRequireDefault(require("tracer"));
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
 
 function _toConsumableArray(arr) { return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _nonIterableSpread(); }
@@ -35,25 +37,38 @@ var _default = {
   tempWikiDir: 'tempMdFiles',
   wikiConfigFileName: 'wikiConfig.json',
   safetyCounterLimit: 100,
+  logger: _tracer["default"].colorConsole({
+    transport: function () {
+      function transport(data) {
+        console.log(data.output);
+
+        _fsExtra["default"].appendFile('./wiki-build.log', "".concat(data.rawoutput, "\n"), function (err) {
+          if (err) throw err;
+        });
+      }
+
+      return transport;
+    }()
+  }),
   buildWiki: function () {
     async function buildWiki() {
-      var wikiConfig = await this.getWikiConfigData((await this.findWikiConfigPath()));
+      var wikiConfig = await this.getWikiConfigData((await this.findWikiConfigPath()["catch"](this.logger.error)))["catch"](this.logger.error);
       var wikiDirPath = wikiConfig.wikiDirPath,
           ignoreMdTitles = wikiConfig.ignoreMdTitles,
           statsEnabled = wikiConfig.statsEnabled,
           plugins = wikiConfig.plugins;
-      await _fsExtra["default"].ensureDir(wikiDirPath);
-      await this.removeMdFilesInWikiDir(wikiDirPath);
-      await this.emptyTempWikiDir(wikiDirPath);
-      await this.copyFilesToTempDir(wikiConfig);
-      await this.createStatsIfEnabled(statsEnabled, wikiDirPath);
+      await _fsExtra["default"].ensureDir(wikiDirPath)["catch"](this.logger.error);
+      await this.removeMdFilesInWikiDir(wikiDirPath)["catch"](this.logger.error);
+      await this.emptyTempWikiDir(wikiDirPath)["catch"](this.logger.error);
+      await this.copyFilesToTempDir(wikiConfig)["catch"](this.logger.error);
+      await this.createStatsIfEnabled(statsEnabled, wikiDirPath)["catch"](this.logger.error);
       var wikiBuilderModule = [this, 'wiki-builder'];
       var reduceActionSteps = new Map();
       reduceActionSteps.set([this.configIgnoreByTitle, [ignoreMdTitles]], [[this.removeFiles, []], wikiBuilderModule]);
       reduceActionSteps = this.addPluginReduceActionSteps(reduceActionSteps, plugins);
       reduceActionSteps.set([this.wikiFileNameByTitle, []], [[this.moveFilesToWiki, [this]], wikiBuilderModule]);
-      await this.readReduceAction(reduceActionSteps, wikiDirPath);
-      await this.removeTempDir(wikiDirPath);
+      await this.readReduceAction(reduceActionSteps, wikiDirPath)["catch"](this.logger.error);
+      await this.removeTempDir(wikiDirPath)["catch"](this.logger.error);
     }
 
     return buildWiki;
@@ -111,7 +126,7 @@ var _default = {
   }(),
   findWikiConfigPath: function () {
     async function findWikiConfigPath() {
-      if (await _fsExtra["default"].pathExists("./".concat(this.wikiConfigFileName))) {
+      if (await _fsExtra["default"].pathExists("./".concat(this.wikiConfigFileName))["catch"](this.logger.error)) {
         return this.wikiConfigFileName;
       }
 
@@ -130,7 +145,8 @@ var _default = {
       return _fsExtra["default"].readJson(wikiStringPath).then(function (wikiConfig) {
         return _this3.useGitignoredIfEnabled(_this3.cleanWikiConfigData(wikiConfig));
       })["catch"](function (err) {
-        console.error(err);
+        _this3.logger.error(err);
+
         return {};
       });
     }
@@ -216,7 +232,7 @@ var _default = {
   emptyTempWikiDir: function () {
     async function emptyTempWikiDir(wikiDirPath) {
       var wikiTempDir = "".concat(wikiDirPath).concat(this.tempWikiDir);
-      var pathExists = await _fsExtra["default"].pathExists(wikiTempDir);
+      var pathExists = await _fsExtra["default"].pathExists(wikiTempDir)["catch"](this.logger.error);
 
       if (pathExists) {
         return _fsExtra["default"].emptyDir(wikiTempDir);
@@ -244,7 +260,7 @@ var _default = {
   }(),
   removeMdFilesInWikiDir: function () {
     async function removeMdFilesInWikiDir(wikiDirPath) {
-      var mdFiles = await this.getMdFilesInDir(wikiDirPath, 'wiki');
+      var mdFiles = await this.getMdFilesInDir(wikiDirPath, 'wiki')["catch"](this.logger.error);
       var removeMdFilePromises = mdFiles.map(function (file) {
         return _fsExtra["default"].remove(file);
       });
@@ -260,7 +276,7 @@ var _default = {
       var wikiDirPath = wikiConfig.wikiDirPath,
           projectDirPath = wikiConfig.projectDirPath,
           ignoreMdFiles = wikiConfig.ignoreMdFiles;
-      var mdFiles = await this.getMdFilesInDir(projectDirPath, 'project');
+      var mdFiles = await this.getMdFilesInDir(projectDirPath, 'project')["catch"](this.logger.error);
       mdFiles = mdFiles.filter(this.ignoreDirsFilterCallback(wikiConfig.ignoreDirs));
       var i = 0;
       var copyMdFilePromises = mdFiles.map(function (file) {
@@ -309,7 +325,7 @@ var _default = {
 
           resolve(stdout);
         });
-      });
+      })["catch"](this.logger.error);
       var writeFileData = await new Promise(function (resolve, reject) {
         _fsExtra["default"].readFile(statsFile, 'utf8', function (err, data) {
           if (err) reject(err);
@@ -333,7 +349,7 @@ var _default = {
 
           resolve(newFileData.join('\n\n'));
         });
-      });
+      })["catch"](this.logger.error);
 
       if (writeFileData.length > 0) {
         return new Promise(function (resolve, reject) {
@@ -341,10 +357,10 @@ var _default = {
             if (err) reject(err);
             resolve('Stats file cleaned');
           });
-        });
+        })["catch"](this.logger.error);
       }
 
-      await _fsExtra["default"].remove(statsFile);
+      await _fsExtra["default"].remove(statsFile)["catch"](this.logger.error);
       return 'Stats file removed because it was empty';
     }
 
@@ -353,11 +369,11 @@ var _default = {
   // Updates the wikiConfig object. Enabled by default
   useGitignoredIfEnabled: function () {
     async function useGitignoredIfEnabled(wikiConfig) {
-      var gitIgnoreFound = await _fsExtra["default"].pathExists("".concat(wikiConfig.projectDirPath, ".gitignore"));
+      var gitIgnoreFound = await _fsExtra["default"].pathExists("".concat(wikiConfig.projectDirPath, ".gitignore"))["catch"](this.logger.error);
 
       if (wikiConfig.useGitignore && gitIgnoreFound) {
         var newWikiConfig = wikiConfig;
-        var gitIgnoreFile = await _fsExtra["default"].readFile("".concat(wikiConfig.projectDirPath, ".gitignore"), 'utf8');
+        var gitIgnoreFile = await _fsExtra["default"].readFile("".concat(wikiConfig.projectDirPath, ".gitignore"), 'utf8')["catch"](this.logger.error);
         var gitIgnoreArray = gitIgnoreFile.split('\n');
         gitIgnoreArray.forEach(function (line) {
           var endOfPath = line.split('/').pop();
@@ -433,12 +449,12 @@ var _default = {
       var reduceFuncName = this.findReduceFuncName(specificFunc, module);
 
       if (!reduceFuncName) {
-        console.log("A reduce function for ".concat(specificFunc.name, " was not found in ").concat(moduleName, ".\n") + '(The pattern is ...By{x} for the specific function and ...By{x}Reduce for the reduce function. ' + "In this case, x = '".concat(specificFunc.name.split('By').pop(), "'.)"));
+        this.logger.error("A reduce function for ".concat(specificFunc.name, " was not found in ").concat(moduleName, ".\n") + '(The pattern is ...By{x} for the specific function and ...By{x}Reduce for the reduce function. ' + "In this case, x = '".concat(specificFunc.name.split('By').pop(), "'.)"));
         process.exit(1);
       } // ----------------------------- Read Reduce Action -----------------------------
 
 
-      var filesInTempDir = await this.readFilesInTempDir(wikiDirPath);
+      var filesInTempDir = await this.readFilesInTempDir(wikiDirPath)["catch"](this.logger.error);
       var reduced = await module[reduceFuncName](filesInTempDir, extraSpecificArgs, specificFunc);
       await actionOnReducedFunc.apply(void 0, [reduced].concat(_toConsumableArray(extraActionArgs))); // ------------------ Recursive Function Call or Termination --------------------
 
@@ -483,7 +499,7 @@ var _default = {
     async function readFilesInTempDir(wikiDirPath) {
       var _this5 = this;
 
-      var filesInTempDir = await this.getFilesInTempDir(wikiDirPath);
+      var filesInTempDir = await this.getFilesInTempDir(wikiDirPath)["catch"](this.logger.error);
       var filePaths = filesInTempDir.map(function (file) {
         return "".concat(wikiDirPath).concat(_this5.tempWikiDir, "/").concat(file);
       });
@@ -501,9 +517,11 @@ var _default = {
   // Reduce Function (for readReduceAction)
   filesByTitleReduce: function () {
     function filesByTitleReduce(filesInTempDir, extraArgs, specificFunc) {
+      var _this6 = this;
+
       return filesInTempDir.reduce(async function (accumulator, fileObj) {
-        var awaitedAccumulator = await accumulator;
-        var buffer = await fileObj.buffer;
+        var awaitedAccumulator = await accumulator["catch"](_this6.logger.error);
+        var buffer = await fileObj.buffer["catch"](_this6.logger.error);
         var lines = buffer.toString('utf-8').split('\n');
         lines = lines.map(function (line) {
           return line.replace(/#/, '').trim().toLowerCase();
@@ -586,7 +604,7 @@ var _default = {
   }(),
   cleanFilesToMove: function () {
     function cleanFilesToMove(filesToMove) {
-      var _this6 = this;
+      var _this7 = this;
 
       var cleanedFilesToMove = filesToMove.filter(function (fileObj) {
         return Object.keys(fileObj).length > 0;
@@ -601,12 +619,12 @@ var _default = {
         var filePath = Object.keys(fileObj)[0];
         var wikiFileName = fileObj[Object.keys(fileObj)[0]];
 
-        var _this6$getUniqueFileN = _this6.getUniqueFileName(wikiFileName, existingFileNames);
+        var _this7$getUniqueFileN = _this7.getUniqueFileName(wikiFileName, existingFileNames);
 
-        var _this6$getUniqueFileN2 = _slicedToArray(_this6$getUniqueFileN, 2);
+        var _this7$getUniqueFileN2 = _slicedToArray(_this7$getUniqueFileN, 2);
 
-        wikiFileName = _this6$getUniqueFileN2[0];
-        existingFileNames = _this6$getUniqueFileN2[1];
+        wikiFileName = _this7$getUniqueFileN2[0];
+        existingFileNames = _this7$getUniqueFileN2[1];
         existingFileNames.push(wikiFileName);
         returnFileObj[filePath] = wikiFileName;
         return returnFileObj;

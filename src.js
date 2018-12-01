@@ -2,6 +2,7 @@
 import fs from 'fs-extra';
 import glob from 'glob';
 import shell from 'shelljs';
+import tracer from 'tracer';
 
 type wikiConfigType = {
   wikiDirPath: string,
@@ -26,17 +27,27 @@ export default {
   tempWikiDir: 'tempMdFiles',
   wikiConfigFileName: 'wikiConfig.json',
   safetyCounterLimit: 100,
+  logger: tracer.colorConsole({
+    transport(data) {
+      console.log(data.output);
+      fs.appendFile('./wiki-build.log', `${data.rawoutput}\n`, (err) => {
+        if (err) throw err;
+      });
+    },
+  }),
   async buildWiki() {
-    const wikiConfig = await this.getWikiConfigData(await this.findWikiConfigPath());
+    const wikiConfig = await this.getWikiConfigData(
+      await this.findWikiConfigPath().catch(this.logger.error),
+    ).catch(this.logger.error);
     const {
       wikiDirPath, ignoreMdTitles, statsEnabled, plugins,
     } = wikiConfig;
 
-    await fs.ensureDir(wikiDirPath);
-    await this.removeMdFilesInWikiDir(wikiDirPath);
-    await this.emptyTempWikiDir(wikiDirPath);
-    await this.copyFilesToTempDir(wikiConfig);
-    await this.createStatsIfEnabled(statsEnabled, wikiDirPath);
+    await fs.ensureDir(wikiDirPath).catch(this.logger.error);
+    await this.removeMdFilesInWikiDir(wikiDirPath).catch(this.logger.error);
+    await this.emptyTempWikiDir(wikiDirPath).catch(this.logger.error);
+    await this.copyFilesToTempDir(wikiConfig).catch(this.logger.error);
+    await this.createStatsIfEnabled(statsEnabled, wikiDirPath).catch(this.logger.error);
 
     const wikiBuilderModule = [this, 'wiki-builder'];
     let reduceActionSteps = new Map();
@@ -49,9 +60,9 @@ export default {
       [this.wikiFileNameByTitle, []],
       [[this.moveFilesToWiki, [this]], wikiBuilderModule],
     );
-    await this.readReduceAction(reduceActionSteps, wikiDirPath);
+    await this.readReduceAction(reduceActionSteps, wikiDirPath).catch(this.logger.error);
 
-    await this.removeTempDir(wikiDirPath);
+    await this.removeTempDir(wikiDirPath).catch(this.logger.error);
   },
   addPluginReduceActionSteps(reduceActionSteps: raSteps, plugins: string[]): raSteps {
     plugins.forEach((plugin) => {
@@ -81,7 +92,7 @@ export default {
     return `${returnPluginPath}/`;
   },
   async findWikiConfigPath(): Promise<string> {
-    if (await fs.pathExists(`./${this.wikiConfigFileName}`)) {
+    if (await fs.pathExists(`./${this.wikiConfigFileName}`).catch(this.logger.error)) {
       return this.wikiConfigFileName;
     }
     const regex = new RegExp(`${this.wikiConfigFileName}$`, 'g');
@@ -91,7 +102,7 @@ export default {
     return fs.readJson(wikiStringPath)
       .then(wikiConfig => this.useGitignoredIfEnabled(this.cleanWikiConfigData(wikiConfig)))
       .catch((err) => {
-        console.error(err);
+        this.logger.error(err);
         return {};
       });
   },
@@ -151,7 +162,7 @@ export default {
   },
   async emptyTempWikiDir(wikiDirPath: string): Promise<void | Error> {
     const wikiTempDir = `${wikiDirPath}${this.tempWikiDir}`;
-    const pathExists = await fs.pathExists(wikiTempDir);
+    const pathExists = await fs.pathExists(wikiTempDir).catch(this.logger.error);
     if (pathExists) {
       return fs.emptyDir(wikiTempDir);
     }
@@ -169,13 +180,13 @@ export default {
     });
   },
   async removeMdFilesInWikiDir(wikiDirPath: string): Promise<Array<void | Error>> {
-    const mdFiles = await this.getMdFilesInDir(wikiDirPath, 'wiki');
+    const mdFiles = await this.getMdFilesInDir(wikiDirPath, 'wiki').catch(this.logger.error);
     const removeMdFilePromises = mdFiles.map(file => fs.remove(file));
     return Promise.all(removeMdFilePromises);
   },
   async copyFilesToTempDir(wikiConfig: wikiConfigType): Promise<Array<void | string | Error>> {
     const { wikiDirPath, projectDirPath, ignoreMdFiles } = wikiConfig;
-    let mdFiles = await this.getMdFilesInDir(projectDirPath, 'project');
+    let mdFiles = await this.getMdFilesInDir(projectDirPath, 'project').catch(this.logger.error);
     mdFiles = mdFiles.filter(this.ignoreDirsFilterCallback(wikiConfig.ignoreDirs));
     let i = 0;
     const copyMdFilePromises = mdFiles.map((file) => {
@@ -186,8 +197,8 @@ export default {
       i += 1;
       const ignoreMdSpecificFiles = ignoreMdFiles.filter(f => f.includes('/'));
       const ignoreMdFileNames = ignoreMdFiles.filter(f => !f.includes('/'));
-      if ((!ignoreMdSpecificFiles.some(ignore => file === ignore)) &&
-        (!ignoreMdFileNames.some(ignore => fileNamesToIgnore.includes(ignore)))) {
+      if ((!ignoreMdSpecificFiles.some(ignore => file === ignore))
+        && (!ignoreMdFileNames.some(ignore => fileNamesToIgnore.includes(ignore)))) {
         return fs.copy(file, `${wikiDirPath}${this.tempWikiDir}/${i}.md`);
       }
       return '';
@@ -209,7 +220,7 @@ export default {
         }
         resolve(stdout);
       });
-    }));
+    })).catch(this.logger.error);
     const writeFileData = await new Promise(((resolve, reject) => {
       fs.readFile(statsFile, 'utf8', (err, data) => {
         if (err) reject(err);
@@ -228,24 +239,24 @@ export default {
         }
         resolve(newFileData.join('\n\n'));
       });
-    }));
+    })).catch(this.logger.error);
     if (writeFileData.length > 0) {
       return new Promise(((resolve, reject) => {
         fs.writeFile(statsFile, writeFileData, 'utf8', (err) => {
           if (err) reject(err);
           resolve('Stats file cleaned');
         });
-      }));
+      })).catch(this.logger.error);
     }
-    await fs.remove(statsFile);
+    await fs.remove(statsFile).catch(this.logger.error);
     return 'Stats file removed because it was empty';
   },
   // Updates the wikiConfig object. Enabled by default
   async useGitignoredIfEnabled(wikiConfig: wikiConfigType): Promise<wikiConfigType> {
-    const gitIgnoreFound = await fs.pathExists(`${wikiConfig.projectDirPath}.gitignore`);
+    const gitIgnoreFound = await fs.pathExists(`${wikiConfig.projectDirPath}.gitignore`).catch(this.logger.error);
     if (wikiConfig.useGitignore && gitIgnoreFound) {
       const newWikiConfig = wikiConfig;
-      const gitIgnoreFile = await fs.readFile(`${wikiConfig.projectDirPath}.gitignore`, 'utf8');
+      const gitIgnoreFile = await fs.readFile(`${wikiConfig.projectDirPath}.gitignore`, 'utf8').catch(this.logger.error);
       const gitIgnoreArray = gitIgnoreFile.split('\n');
       gitIgnoreArray.forEach((line) => {
         const endOfPath = line.split('/').pop();
@@ -288,13 +299,13 @@ export default {
     const [module, moduleName] = moduleArray;
     const reduceFuncName = this.findReduceFuncName(specificFunc, module);
     if (!reduceFuncName) {
-      console.log(`A reduce function for ${specificFunc.name} was not found in ${moduleName}.\n`
+      this.logger.error(`A reduce function for ${specificFunc.name} was not found in ${moduleName}.\n`
       + '(The pattern is ...By{x} for the specific function and ...By{x}Reduce for the reduce function. '
       + `In this case, x = '${specificFunc.name.split('By').pop()}'.)`);
       process.exit(1);
     }
     // ----------------------------- Read Reduce Action -----------------------------
-    const filesInTempDir = await this.readFilesInTempDir(wikiDirPath);
+    const filesInTempDir = await this.readFilesInTempDir(wikiDirPath).catch(this.logger.error);
     const reduced = await module[reduceFuncName](filesInTempDir, extraSpecificArgs, specificFunc);
     await actionOnReducedFunc(reduced, ...extraActionArgs);
     // ------------------ Recursive Function Call or Termination --------------------
@@ -321,7 +332,7 @@ export default {
     return fs.readdir(`${wikiDirPath}${this.tempWikiDir}`);
   },
   async readFilesInTempDir(wikiDirPath: string): Promise<Array<Object | Error>> {
-    const filesInTempDir = await this.getFilesInTempDir(wikiDirPath);
+    const filesInTempDir = await this.getFilesInTempDir(wikiDirPath).catch(this.logger.error);
     const filePaths = filesInTempDir.map(file => `${wikiDirPath}${this.tempWikiDir}/${file}`);
     const fileAndBuffer = filePaths.map(file => ({
       filePath: file,
@@ -336,8 +347,8 @@ export default {
     return filesInTempDir.reduce(async (accumulator: reducePromiseArray, fileObj: {
       buffer: Promise<Buffer>, filePath: string
     }): reducePromiseArray => {
-      const awaitedAccumulator = await accumulator;
-      const buffer = await fileObj.buffer;
+      const awaitedAccumulator = await accumulator.catch(this.logger.error);
+      const buffer = await fileObj.buffer.catch(this.logger.error);
       let lines = buffer.toString('utf-8').split('\n');
       lines = lines
         .map(line => line.replace(/#/, '').trim().toLowerCase())
