@@ -52,11 +52,23 @@ var _default = {
   }),
   buildWiki: function () {
     async function buildWiki() {
+      var _this = this;
+
       var wikiConfig = await this.getWikiConfigData((await this.findWikiConfigPath()["catch"](this.logger.error)))["catch"](this.logger.error);
       var wikiDirPath = wikiConfig.wikiDirPath,
           ignoreMdTitles = wikiConfig.ignoreMdTitles,
           statsEnabled = wikiConfig.statsEnabled,
-          plugins = wikiConfig.plugins;
+          plugins = wikiConfig.plugins,
+          useLogger = wikiConfig.useLogger;
+
+      if (!useLogger) {
+        var logLevels = ['log', 'trace', 'debug', 'info', 'warn', 'error'];
+        this.logger = {};
+        logLevels.forEach(function (level) {
+          _this.logger[level] = console.log;
+        });
+      }
+
       await _fsExtra["default"].ensureDir(wikiDirPath)["catch"](this.logger.error);
       await this.removeMdFilesInWikiDir(wikiDirPath)["catch"](this.logger.error);
       await this.emptyTempWikiDir(wikiDirPath)["catch"](this.logger.error);
@@ -75,10 +87,10 @@ var _default = {
   }(),
   addPluginReduceActionSteps: function () {
     function addPluginReduceActionSteps(reduceActionSteps, plugins) {
-      var _this = this;
+      var _this2 = this;
 
       plugins.forEach(function (plugin) {
-        var pluginPath = _this.getPluginPath(plugin); // eslint-disable-next-line
+        var pluginPath = _this2.getPluginPath(plugin); // eslint-disable-next-line
 
 
         var pluginModule = require(pluginPath);
@@ -94,14 +106,14 @@ var _default = {
   }(),
   cleanPlugins: function () {
     function cleanPlugins(plugins) {
-      var _this2 = this;
+      var _this3 = this;
 
       if (!Array.isArray(plugins) || plugins.length <= 0) {
         return [];
       }
 
       return plugins.map(function (plugin) {
-        return _this2.getPluginPath(plugin);
+        return _this3.getPluginPath(plugin);
       });
     }
 
@@ -140,12 +152,12 @@ var _default = {
   }(),
   getWikiConfigData: function () {
     function getWikiConfigData(wikiStringPath) {
-      var _this3 = this;
+      var _this4 = this;
 
       return _fsExtra["default"].readJson(wikiStringPath).then(function (wikiConfig) {
-        return _this3.useGitignoredIfEnabled(_this3.cleanWikiConfigData(wikiConfig));
+        return _this4.useGitignoredIfEnabled(_this4.cleanWikiConfigData(wikiConfig));
       })["catch"](function (err) {
-        _this3.logger.error(err);
+        _this4.logger.error(err);
 
         return {};
       });
@@ -165,6 +177,7 @@ var _default = {
       cleanedWikiConfig.statsEnabled = this.cleanWikiConfigBool(wikiConfig.statsEnabled);
       cleanedWikiConfig.useGitignore = this.cleanWikiConfigBool(wikiConfig.useGitignore, true);
       cleanedWikiConfig.plugins = this.cleanPlugins(wikiConfig.plugins);
+      cleanedWikiConfig.useLogger = this.cleanWikiConfigBool(cleanedWikiConfig.useLogger, true);
       return cleanedWikiConfig;
     }
 
@@ -271,7 +284,7 @@ var _default = {
   }(),
   copyFilesToTempDir: function () {
     async function copyFilesToTempDir(wikiConfig) {
-      var _this4 = this;
+      var _this5 = this;
 
       var wikiDirPath = wikiConfig.wikiDirPath,
           projectDirPath = wikiConfig.projectDirPath,
@@ -297,7 +310,7 @@ var _default = {
         }) && !ignoreMdFileNames.some(function (ignore) {
           return fileNamesToIgnore.includes(ignore);
         })) {
-          return _fsExtra["default"].copy(file, "".concat(wikiDirPath).concat(_this4.tempWikiDir, "/").concat(i, ".md"));
+          return _fsExtra["default"].copy(file, "".concat(wikiDirPath).concat(_this5.tempWikiDir, "/").concat(i, ".md"));
         }
 
         return '';
@@ -497,11 +510,11 @@ var _default = {
   }(),
   readFilesInTempDir: function () {
     async function readFilesInTempDir(wikiDirPath) {
-      var _this5 = this;
+      var _this6 = this;
 
       var filesInTempDir = await this.getFilesInTempDir(wikiDirPath)["catch"](this.logger.error);
       var filePaths = filesInTempDir.map(function (file) {
-        return "".concat(wikiDirPath).concat(_this5.tempWikiDir, "/").concat(file);
+        return "".concat(wikiDirPath).concat(_this6.tempWikiDir, "/").concat(file);
       });
       var fileAndBuffer = filePaths.map(function (file) {
         return {
@@ -517,11 +530,11 @@ var _default = {
   // Reduce Function (for readReduceAction)
   filesByTitleReduce: function () {
     function filesByTitleReduce(filesInTempDir, extraArgs, specificFunc) {
-      var _this6 = this;
+      var _this7 = this;
 
       return filesInTempDir.reduce(async function (accumulator, fileObj) {
-        var awaitedAccumulator = await accumulator["catch"](_this6.logger.error);
-        var buffer = await fileObj.buffer["catch"](_this6.logger.error);
+        var awaitedAccumulator = await accumulator["catch"](_this7.logger.error);
+        var buffer = await fileObj.buffer["catch"](_this7.logger.error);
         var lines = buffer.toString('utf-8').split('\n');
         lines = lines.map(function (line) {
           return line.replace(/#/, '').trim().toLowerCase();
@@ -604,7 +617,7 @@ var _default = {
   }(),
   cleanFilesToMove: function () {
     function cleanFilesToMove(filesToMove) {
-      var _this7 = this;
+      var _this8 = this;
 
       var cleanedFilesToMove = filesToMove.filter(function (fileObj) {
         return Object.keys(fileObj).length > 0;
@@ -619,12 +632,12 @@ var _default = {
         var filePath = Object.keys(fileObj)[0];
         var wikiFileName = fileObj[Object.keys(fileObj)[0]];
 
-        var _this7$getUniqueFileN = _this7.getUniqueFileName(wikiFileName, existingFileNames);
+        var _this8$getUniqueFileN = _this8.getUniqueFileName(wikiFileName, existingFileNames);
 
-        var _this7$getUniqueFileN2 = _slicedToArray(_this7$getUniqueFileN, 2);
+        var _this8$getUniqueFileN2 = _slicedToArray(_this8$getUniqueFileN, 2);
 
-        wikiFileName = _this7$getUniqueFileN2[0];
-        existingFileNames = _this7$getUniqueFileN2[1];
+        wikiFileName = _this8$getUniqueFileN2[0];
+        existingFileNames = _this8$getUniqueFileN2[1];
         existingFileNames.push(wikiFileName);
         returnFileObj[filePath] = wikiFileName;
         return returnFileObj;

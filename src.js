@@ -13,6 +13,7 @@ type wikiConfigType = {
   statsEnabled: any,
   useGitignore: any,
   plugins: string[],
+  useLogger: any,
 };
 type bufferAndPath = {
   buffer: Promise<Buffer>,
@@ -39,9 +40,16 @@ export default {
     const wikiConfig = await this.getWikiConfigData(
       await this.findWikiConfigPath().catch(this.logger.error),
     ).catch(this.logger.error);
+
     const {
-      wikiDirPath, ignoreMdTitles, statsEnabled, plugins,
+      wikiDirPath, ignoreMdTitles, statsEnabled, plugins, useLogger,
     } = wikiConfig;
+
+    if (!useLogger) {
+      const logLevels = ['log', 'trace', 'debug', 'info', 'warn', 'error'];
+      this.logger = {};
+      logLevels.forEach((level) => { this.logger[level] = console.log; });
+    }
 
     await fs.ensureDir(wikiDirPath).catch(this.logger.error);
     await this.removeMdFilesInWikiDir(wikiDirPath).catch(this.logger.error);
@@ -118,6 +126,7 @@ export default {
     cleanedWikiConfig.statsEnabled = this.cleanWikiConfigBool(wikiConfig.statsEnabled);
     cleanedWikiConfig.useGitignore = this.cleanWikiConfigBool(wikiConfig.useGitignore, true);
     cleanedWikiConfig.plugins = this.cleanPlugins(wikiConfig.plugins);
+    cleanedWikiConfig.useLogger = this.cleanWikiConfigBool(cleanedWikiConfig.useLogger, true);
 
     return cleanedWikiConfig;
   },

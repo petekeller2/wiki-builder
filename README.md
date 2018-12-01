@@ -1,5 +1,5 @@
 Sync your github wiki with markdown
-files in your project.
+files in your source code.
 
 # Setup
 
@@ -38,10 +38,15 @@ only be created for git repositories with commits. False by default.
 **useGitignore:** Ignore directories and markdown files in 
 .gitignore. True by default.
 
+**useLogger:** Errors will be logged to wiki-build.log 
+in the project's root directory. True by default.
+
 **plugins:** Add plugins here. These plugins should have 
  corresponding local node modules. If the node_modules directory is not 
 in the same directory as the project's root, give the module 
-(plugin) path instead of it's name. Example Usage: ["plugin-one", "plugin-two"].
+(plugin) path instead of it's name. Example Usage: ["plugin-one", "plugin-two"]. 
+A list of existing plugins and a guide to creating new ones can 
+be found in PLUGINS.md.
 
 # Usage
 

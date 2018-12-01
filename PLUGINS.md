@@ -2,6 +2,7 @@
 * No known plugins.
 
 # Writing Plugins
+* You should keep in mind when `addPluginReduceActionSteps` gets called in `src.js` (`reduceActionSteps` are executed sequentially).
 * A plugin should be exported as an object.
 * That object should contain a function named getStep.
 * getStep should return `[[specificFunc, [...extraSpecificArgs]], [[actionOnReducedFunc, [...extraActionArgs]]]]`.
