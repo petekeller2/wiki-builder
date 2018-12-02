@@ -1,6 +1,6 @@
 {
   "name": "wiki-builder",
-  "version": "0.9.7",
+  "version": "0.9.8",
   "description": "Build github wikis from markdown files",
   "private": false,
   "main": "build.js",
@@ -12,6 +12,10 @@
   "bin": {
     "wiki-builder": "wikiBuild.js"
   },
+  "files": [
+    "build.js",
+    "wikiBuild.js"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/petekeller2/wiki-builder.git"
