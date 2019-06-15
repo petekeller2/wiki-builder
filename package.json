@@ -1,20 +1,20 @@
 {
   "name": "wiki-builder",
-  "version": "0.9.8",
+  "version": "0.9.9",
   "description": "Build github wikis from markdown files",
   "private": false,
-  "main": "build.js",
+  "main": "lib/build.js",
   "scripts": {
-    "start": "node wikiBuild.js",
-    "build": "rm ./build.js || true && babel src.js --out-file build.js",
-    "test": "[ -f ./src.js ] && [ -f ./wikiBuild.js ] && npm run build && [ -f ./build.js ]"
+    "start": "node src/wikiBuild.js",
+    "build": "rm ./lib/build.js || true && babel src/index.js --out-file lib/build.js",
+    "test": "[ -f ./src/index.js ] && [ -f ./src/wikiBuild.js ] && npm run build && [ -f ./lib/build.js ]"
   },
   "bin": {
-    "wiki-builder": "wikiBuild.js"
+    "wiki-builder": "src/wikiBuild.js"
   },
   "files": [
-    "build.js",
-    "wikiBuild.js"
+    "lib/build.js",
+    "src/wikiBuild.js"
   ],
   "repository": {
     "type": "git",

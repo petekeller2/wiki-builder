@@ -1,5 +1,5 @@
 #! /usr/bin/env node
 
-const build = require('./build');
+const build = require('../lib/build');
 
 build.default.buildWiki();
