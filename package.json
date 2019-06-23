@@ -1,16 +1,29 @@
 {
   "name": "wiki-builder",
-  "version": "0.9.9",
+  "version": "0.9.91",
   "description": "Build github wikis from markdown files",
   "private": false,
   "main": "lib/build.js",
   "scripts": {
     "start": "node src/wikiBuild.js",
     "build": "rm ./lib/build.js || true && babel src/index.js --out-file lib/build.js",
-    "test": "[ -f ./src/index.js ] && [ -f ./src/wikiBuild.js ] && npm run build && [ -f ./lib/build.js ]"
+    "test": "npm run test-step && npm run test-wiki-build && npm run test-plugin && npm run test-check-files",
+    "test-setup": "[ -f ./src/index.js ] && [ -f ./src/wikiBuild.js ] && npm run build && [ -f ./lib/build.js ]",
+    "test-wiki-build": "npm run setup-test-wiki-build && cd ./test/wiki_builder_test && npm run start",
+    "setup-test-wiki-build": "rm -rf ./test/wiki_builder_test && cp -R ./node_modules/wiki_builder_test/ ./test/wiki_builder_test",
+    "test-plugin": "npm run setup-test-plugin-1 && npm run setup-test-plugin-2 && npm run setup-test-plugin-3 && cd ./test/wiki_builder_test_plugin && npm run start",
+    "setup-test-plugin-1": "rm -rf ./test/wiki_builder_test_plugin && cp -R ./node_modules/wiki_builder_test_plugin/ ./test/wiki_builder_test_plugin",
+    "setup-test-plugin-2": "mkdir ./test/wiki_builder_test_plugin/node_modules && mkdir ./test/wiki_builder_test_plugin/node_modules/wiki-builder-plugin-test",
+    "setup-test-plugin-3": "cp -R ./node_modules/wiki-builder-plugin-test/ ./test/wiki_builder_test_plugin/node_modules/wiki-builder-plugin-test",
+    "test-check-files": "ava --tap | tap-diff"
   },
   "bin": {
     "wiki-builder": "src/wikiBuild.js"
+  },
+  "ava": {
+    "files": [
+      "test.js"
+    ]
   },
   "files": [
     "lib/build.js",
@@ -36,6 +49,7 @@
     "@babel/cli": "^7.4.4",
     "@babel/core": "^7.4.5",
     "@babel/preset-flow": "^7.0.0",
+    "ava": "^2.1.0",
     "babel-eslint": "^10.0.1",
     "babel-preset-airbnb": "^3.2.1",
     "eslint": "^5.16.0",
@@ -45,6 +59,10 @@
     "eslint-plugin-flowtype": "^3.10.3",
     "eslint-plugin-import": "^2.17.3",
     "eslint-plugin-jsx-a11y": "^6.2.1",
-    "eslint-plugin-react": "^7.13.0"
+    "eslint-plugin-react": "^7.13.0",
+    "tap-diff": "^0.1.1",
+    "wiki_builder_test": "latest",
+    "wiki_builder_test_plugin": "latest",
+    "wiki-builder-plugin-test": "latest"
   }
 }
