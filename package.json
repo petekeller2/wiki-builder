@@ -7,7 +7,7 @@
   "scripts": {
     "start": "node src/wikiBuild.js",
     "build": "rm ./lib/build.js || true && babel src/index.js --out-file lib/build.js",
-    "test": "npm run test-step && npm run test-wiki-build && npm run test-plugin && npm run test-check-files",
+    "test": "npm run test-setup && npm run test-wiki-build && npm run test-plugin && npm run test-check-files",
     "test-setup": "[ -f ./src/index.js ] && [ -f ./src/wikiBuild.js ] && npm run build && [ -f ./lib/build.js ]",
     "test-wiki-build": "npm run setup-test-wiki-build && cd ./test/wiki_builder_test && npm run start",
     "setup-test-wiki-build": "rm -rf ./test/wiki_builder_test && cp -R ./node_modules/wiki_builder_test/ ./test/wiki_builder_test",
