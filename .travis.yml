@@ -1,4 +1,4 @@
 language: node_js
-script: npm test-setup
+script: npm run test-setup
 node_js:
   - "node"
