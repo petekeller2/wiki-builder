@@ -1,6 +1,6 @@
 {
   "name": "wiki-builder",
-  "version": "0.9.92",
+  "version": "0.9.94",
   "description": "Build github wikis from markdown files",
   "private": false,
   "main": "lib/build.js",
@@ -15,7 +15,7 @@
     "setup-test-plugin-1": "rm -rf ./test/wiki_builder_test_plugin && cp -R ./node_modules/wiki_builder_test_plugin/ ./test/wiki_builder_test_plugin",
     "setup-test-plugin-2": "mkdir ./test/wiki_builder_test_plugin/node_modules && mkdir ./test/wiki_builder_test_plugin/node_modules/wiki-builder-plugin-test",
     "setup-test-plugin-3": "cp -R ./node_modules/wiki-builder-plugin-test/ ./test/wiki_builder_test_plugin/node_modules/wiki-builder-plugin-test",
-    "test-check-files": "ava --tap | tap-diff"
+    "test-check-files": "ava --tap"
   },
   "bin": {
     "wiki-builder": "src/wikiBuild.js"
@@ -46,23 +46,24 @@
     "tracer": "^0.9.8"
   },
   "devDependencies": {
-    "@babel/cli": "^7.4.4",
-    "@babel/core": "^7.4.5",
+    "@babel/cli": "^7.5.5",
+    "@babel/core": "^7.5.5",
     "@babel/preset-flow": "^7.0.0",
-    "ava": "^2.1.0",
+    "@babel/runtime": "^7.5.5",
+    "ava": "^2.2.0",
     "babel-eslint": "^10.0.2",
     "babel-preset-airbnb": "^4.0.1",
-    "eslint": "^6.0.1",
-    "eslint-config-airbnb": "^17.1.0",
-    "eslint-config-airbnb-base": "^13.1.0",
+    "eslint": "^6.1.0",
+    "eslint-config-airbnb": "^17.1.1",
+    "eslint-config-airbnb-base": "^13.2.0",
     "eslint-plugin-babel": "^5.3.0",
-    "eslint-plugin-flowtype": "^3.11.1",
-    "eslint-plugin-import": "^2.18.0",
-    "eslint-plugin-jsx-a11y": "^6.2.1",
-    "eslint-plugin-react": "^7.14.2",
-    "tap-diff": "^0.1.1",
+    "eslint-plugin-flowtype": "^3.12.1",
+    "eslint-plugin-import": "^2.18.2",
+    "eslint-plugin-jsx-a11y": "^6.2.3",
+    "eslint-plugin-react": "^7.14.3",
+    "underscore": "^1.9.1",
+    "wiki-builder-plugin-test": "latest",
     "wiki_builder_test": "latest",
-    "wiki_builder_test_plugin": "latest",
-    "wiki-builder-plugin-test": "latest"
+    "wiki_builder_test_plugin": "latest"
   }
 }
