@@ -323,6 +323,7 @@ test('Plugin test project created wiki markdown files as expected', async (t) =>
   await start();
 });
 
+// This fails sometimes. TODO: investigate this
 test('Test plugin works as expected', async (t) => {
   let res;
   try {
