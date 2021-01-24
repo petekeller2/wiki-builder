@@ -11,10 +11,11 @@
     "test-setup": "[ -f ./src/index.js ] && [ -f ./src/wikiBuild.js ] && npm run build && [ -f ./lib/build.js ]",
     "test-wiki-build": "npm run setup-test-wiki-build && cd ./test/wiki_builder_test && npm run start",
     "setup-test-wiki-build": "rm -rf ./test/wiki_builder_test && cp -R ./node_modules/wiki_builder_test/ ./test/wiki_builder_test",
-    "test-plugin": "npm run setup-test-plugin-1 && npm run setup-test-plugin-2 && npm run setup-test-plugin-3 && cd ./test/wiki_builder_test_plugin && npm run start",
+    "test-plugin": "npm run setup-test-plugin-1 && npm run setup-test-plugin-2 && npm run setup-test-plugin-3 && npm run setup-test-plugin-4 && cd ./test/wiki_builder_test_plugin && npm run start",
     "setup-test-plugin-1": "rm -rf ./test/wiki_builder_test_plugin && cp -R ./node_modules/wiki_builder_test_plugin/ ./test/wiki_builder_test_plugin",
-    "setup-test-plugin-2": "mkdir ./test/wiki_builder_test_plugin/node_modules && mkdir ./test/wiki_builder_test_plugin/node_modules/wiki-builder-plugin-test",
-    "setup-test-plugin-3": "cp -R ./node_modules/wiki-builder-plugin-test/ ./test/wiki_builder_test_plugin/node_modules/wiki-builder-plugin-test",
+    "setup-test-plugin-2": "rm -rf ./test/wiki_builder_test_plugin/node_modules && rm -rf ./test/wiki_builder_test_plugin/node_modules/wiki-builder-plugin-test",
+    "setup-test-plugin-3": "mkdir ./test/wiki_builder_test_plugin/node_modules && mkdir ./test/wiki_builder_test_plugin/node_modules/wiki-builder-plugin-test",
+    "setup-test-plugin-4": "cp -R ./node_modules/wiki-builder-plugin-test/ ./test/wiki_builder_test_plugin/node_modules/wiki-builder-plugin-test",
     "test-check-files": "ava --tap"
   },
   "bin": {
