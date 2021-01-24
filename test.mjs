@@ -1,7 +1,8 @@
 import test from 'ava';
 import _ from 'underscore';
+import { promises } from 'fs';
 
-const fsPromises = require('fs').promises;
+const fsPromises = promises;
 // ------------------- Glossary -------------------
 /*
  * Standard test project -> wiki_builder_test
@@ -23,7 +24,7 @@ const fsPromises = require('fs').promises;
 
 // -------------------- Paths ---------------------
 
-const standardTestProjectPath = 'test/wiki_builder_test_plugin/';
+const standardTestProjectPath = 'test/wiki_builder_test/';
 const pluginTestProjectPath = 'test/wiki_builder_test_plugin/';
 const pluginTestLogPath = `${pluginTestProjectPath}/log.txt`;
 const wikiDir = 'wiki/';

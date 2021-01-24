@@ -381,10 +381,12 @@ export default {
   wikiFileNameByTitle(lines: string[], fileObj: bufferAndPath): {} {
     const returnObj = {};
     const wikiTitle = lines.shift();
-    let wikiFileName = wikiTitle.replace(/\b\w/g, word => word.toUpperCase());
-    wikiFileName = wikiFileName.replace(/\s+/g, '-');
-    if (fileObj.filePath) {
-      returnObj[fileObj.filePath] = `${wikiFileName}.md`;
+    if (wikiTitle) {
+      let wikiFileName = wikiTitle.replace(/\b\w/g, word => word.toUpperCase());
+      wikiFileName = wikiFileName.replace(/\s+/g, '-');
+      if (fileObj.filePath) {
+        returnObj[fileObj.filePath] = `${wikiFileName}.md`;
+      }
     }
     return returnObj;
   },
