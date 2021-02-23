@@ -34,6 +34,9 @@
     "type": "git",
     "url": "https://github.com/petekeller2/wiki-builder.git"
   },
+  "keywords": [
+    "wiki", "github", "npm"
+  ],
   "author": "Peter Keller",
   "license": "MIT",
   "bugs": {
