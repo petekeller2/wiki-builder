@@ -1,6 +1,7 @@
 [![Build Status](https://travis-ci.org/petekeller2/wiki-builder.svg?branch=master)](https://travis-ci.org/petekeller2/wiki-builder) 
 [![dependencies Status](https://david-dm.org/petekeller2/wiki-builder/status.svg)](https://david-dm.org/petekeller2/wiki-builder)
 [![license](https://img.shields.io/github/license/mashape/apistatus.svg)](https://github.com/petekeller2/wiki-builder/LICENSE)
+[![npm version](http://img.shields.io/npm/v/wiki-builder.svg?style=flat)](https://npmjs.org/package/wiki-builder)
 
 Sync your github wiki with markdown
 files in your source code.
