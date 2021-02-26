@@ -3,8 +3,7 @@
 [![license](https://img.shields.io/github/license/mashape/apistatus.svg)](https://github.com/petekeller2/wiki-builder/LICENSE)
 [![npm version](http://img.shields.io/npm/v/wiki-builder.svg?style=flat)](https://npmjs.org/package/wiki-builder)
 
-Sync your github wiki with markdown
-files in your source code.
+Build github wikis from markdown source files.
 
 # Setup
 
