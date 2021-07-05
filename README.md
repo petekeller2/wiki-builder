@@ -63,5 +63,10 @@ package.json example:
   }
 ```
 
+npx example:
+```
+npx wiki-builder
+```
+
 `wiki-builder` puts files into the 'wikiDirPath'. If you do 
 not have a github wiki git submodule, [you can make one.](https://brendancleary.com/2013/03/08/including-a-github-wiki-in-a-repository-as-a-submodule/)
