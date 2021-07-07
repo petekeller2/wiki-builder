@@ -324,7 +324,6 @@ test('Plugin test project created wiki markdown files as expected', async (t) =>
   await start();
 });
 
-// This fails sometimes. TODO: investigate this
 test('Test plugin works as expected', async (t) => {
   let res;
   try {
@@ -337,5 +336,5 @@ test('Test plugin works as expected', async (t) => {
     console.log('res undefined');
     t.fail();
   }
-  t.is(res, testPluginResults);
+  t.deepEqual(res.split('\n').sort(), testPluginResults.split('\n').sort());
 });
