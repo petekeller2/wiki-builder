@@ -1,6 +1,6 @@
 {
   "name": "wiki-builder",
-  "version": "0.9.95",
+  "version": "1.0.0",
   "description": "Build github wikis from markdown files",
   "private": false,
   "main": "lib/build.js",
@@ -35,7 +35,10 @@
     "url": "https://github.com/petekeller2/wiki-builder.git"
   },
   "keywords": [
-    "github", "markdown", "npm", "wiki"
+    "github",
+    "markdown",
+    "npm",
+    "wiki"
   ],
   "author": "Peter Keller",
   "license": "MIT",
@@ -44,30 +47,30 @@
   },
   "homepage": "https://github.com/petekeller2/wiki-builder#readme",
   "dependencies": {
-    "fs-extra": "^9.0.1",
-    "glob": "^7.1.6",
+    "fs-extra": "^10.0.0",
+    "glob": "^7.2.0",
     "shelljs": "^0.8.4",
-    "tracer": "^1.1.4"
+    "tracer": "^1.1.5"
   },
   "devDependencies": {
-    "@babel/cli": "^7.12.10",
-    "@babel/core": "^7.12.10",
-    "@babel/preset-flow": "^7.12.1",
-    "@babel/runtime": "^7.12.5",
+    "@babel/cli": "^7.16.0",
+    "@babel/core": "^7.16.0",
+    "@babel/preset-flow": "^7.16.0",
+    "@babel/runtime": "^7.16.3",
     "ava": "^3.15.0",
     "babel-eslint": "^10.1.0",
     "babel-preset-airbnb": "^5.0.0",
-    "eslint": "^7.18.0",
-    "eslint-config-airbnb": "^18.2.1",
-    "eslint-config-airbnb-base": "^14.2.1",
+    "eslint": "^8.3.0",
+    "eslint-config-airbnb": "^19.0.1",
+    "eslint-config-airbnb-base": "^15.0.0",
     "eslint-plugin-babel": "^5.3.1",
-    "eslint-plugin-flowtype": "^5.2.0",
-    "eslint-plugin-import": "^2.22.1",
-    "eslint-plugin-jsx-a11y": "^6.4.1",
-    "eslint-plugin-react": "^7.22.0",
-    "underscore": "^1.12.0",
-    "wiki-builder-plugin-test": "latest",
+    "eslint-plugin-flowtype": "^8.0.3",
+    "eslint-plugin-import": "^2.25.3",
+    "eslint-plugin-jsx-a11y": "^6.5.1",
+    "eslint-plugin-react": "^7.27.1",
+    "underscore": "^1.13.1",
     "wiki_builder_test": "latest",
-    "wiki_builder_test_plugin": "latest"
+    "wiki_builder_test_plugin": "latest",
+    "wiki-builder-plugin-test": "latest"
   }
 }
