@@ -48,7 +48,7 @@ in the project's root directory. True by default.
 **plugins:** Add plugins here. These plugins should have 
  corresponding local node modules. If the node_modules directory is not 
 in the same directory as the project's root, give the module 
-(plugin) path instead of it's name. Example Usage: ["plugin-one", "plugin-two"]. 
+(plugin) path instead of its name. Example Usage: ["plugin-one", "plugin-two"]. 
 A list of existing plugins and a guide to creating new ones can 
 be found in PLUGINS.md.
 
